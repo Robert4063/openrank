@@ -70,7 +70,7 @@
 
 ### 1. 获取代码
 ```bash
-git clone https://github.com/Robert4063/openrank/OpenPulse.git
+git clone https://github.com/Robert4063/OpenPulse/OpenPulse.git
 cd OpenPulse
 ```
 
