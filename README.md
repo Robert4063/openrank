@@ -33,7 +33,6 @@
 
 ### 2. 生命周期追踪与预测
 *   **历史回溯**: 结合 OpenDigger 数据，以折线图呈现项目过往的发展样貌。
-*   **趋势预测**: 利用时间序列分析与近期趋势，预测项目未来的活跃度与紧密度（虚线展示）。
 *   **实时状态**: 支持按年、月、日维度的实时关系网络查看。
 
 ### 3. MaxKB 多智能体协作
@@ -49,8 +48,8 @@
 ## 技术架构
 
 ### 前端技术栈
-*   **Web 框架**: React / Vue (建议)
-*   **可视化引擎**: D3.js / ECharts / Three.js (用于赛博光影球状图)
+*   **Web 框架**: React / Vue 
+*   **可视化引擎**: D3.js / ECharts / Three.js 
 *   **交互组件**: 现代化 UI 组件库
 
 ### 后端技术栈
@@ -62,8 +61,6 @@
 ### AI 与 智能体
 *   **大模型支持**: MaxKB (多智能体协作)
 *   **NLP 算法**: 情感分析模型
-*   **预测模型**: 传染病模型 (Infectious Disease Model)
-
 ## 安装部署
 
 ### 环境要求
@@ -73,7 +70,7 @@
 
 ### 1. 获取代码
 ```bash
-git clone https://github.com/YourUsername/OpenPulse.git
+git clone https://github.com/Robert4063/openrank/OpenPulse.git
 cd OpenPulse
 ```
 
@@ -123,14 +120,11 @@ npm start
 
 ## 核心算法
 *   **NLP 情感计算**: 用于分析开发者交互的情感色彩。
-*   **传染病模型 (Infectious Disease Model)**: 模拟技术趋势或舆情的在社区内的传播。
-*   **排斥力算法**: 用于关系网络图的自动布局，确保节点分布合理。
 
 ## 开发计划
 - [ ] 完善多智能体协作流程
 - [ ] 优化 3D 渲染性能
 - [ ] 接入更多开源数据源
-- [ ] 推出移动端适配版本
 
 ## 贡献指南
 欢迎提交 Issue 和 Pull Request 参与项目改进。
