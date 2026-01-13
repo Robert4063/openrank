@@ -26,7 +26,6 @@ OpenPulse is a comprehensive open source community health assessment platform th
 - **Community Panorama** — Multi-dimensional health metrics with cyber-style collaboration visualization
 - **Lifecycle Analysis** — Historical retrospection + trend prediction with OpenDigger data integration
 - **Intelligent Collaboration** — MaxKB multi-agent real-time analysis and proactive governance
-- **Smart Search** — Trending rankings, intelligent sorting, six-dimensional contributor profiling
 
 ## Features
 
@@ -38,14 +37,12 @@ OpenPulse is a comprehensive open source community health assessment platform th
 
 2. **Interactive Visualization**
    - Force-directed graph for collaboration networks
-   - 3D cyber-style relationship spheres
+   - 3D relationship spheres
    - Historical trend charts with predictions
    - Six-dimensional radar charts for contributors
 
 3. **Intelligent Analysis**
    - MaxKB multi-agent collaboration
-   - NLP-based sentiment analysis for relationships
-   - Epidemiological model for trend prediction
    - Personalized project recommendations
 
 4. **Search & Discovery**
@@ -59,7 +56,7 @@ OpenPulse is a comprehensive open source community health assessment platform th
 | Technology | Purpose |
 |------------|---------|
 | React | Web Framework |
-| D3.js / Three.js | Visualization Engine (3D Cyber Sphere) |
+| D3.js / Three.js | Visualization Engine (3D Sphere) |
 | Tailwind CSS | Styling Framework |
 | Vite | Build Tool |
 
@@ -75,8 +72,6 @@ OpenPulse is a comprehensive open source community health assessment platform th
 | Technology | Purpose |
 |------------|---------|
 | MaxKB | Multi-agent Collaboration |
-| NLP Models | Sentiment Analysis |
-| Epidemiological Models | Trend Prediction |
 
 ## Installation
 
