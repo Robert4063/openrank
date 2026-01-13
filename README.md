@@ -26,6 +26,7 @@ OpenPulse is a comprehensive open source community health assessment platform th
 - **Community Panorama** — Multi-dimensional health metrics with 3D collaboration visualization
 - **Lifecycle Analysis** — Historical retrospection + trend prediction with OpenDigger data integration
 - **Intelligent Collaboration** — MaxKB agent real-time analysis and proactive governance
+- **Smart Search** — Popularity Rankings, Intelligent Ranking, and Contributor Insights
 
 ## Features
 
