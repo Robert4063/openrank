@@ -13,6 +13,8 @@ router = APIRouter(prefix="/health", tags=["health"])
 # 健康度评分缓存
 _health_cache = None
 _cache_load_time = None
+# 预排序的分数列表缓存（用于快速查找相似项目）
+_sorted_scores_cache = None
 
 # JSON 文件路径
 HEALTH_SCORES_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'health_scores.json')
@@ -20,7 +22,7 @@ HEALTH_SCORES_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.dirnam
 
 def load_health_scores():
     """加载预计算的健康度评分"""
-    global _health_cache, _cache_load_time
+    global _health_cache, _cache_load_time, _sorted_scores_cache
     
     try:
         # 检查文件修改时间，如果文件更新了就重新加载
@@ -31,6 +33,18 @@ def load_health_scores():
                     data = json.load(f)
                     _health_cache = data.get('scores', {})
                     _cache_load_time = file_mtime
+                    
+                    # 构建预排序的分数列表（按分数升序）
+                    _sorted_scores_cache = []
+                    for key, item in _health_cache.items():
+                        if not item.get('error'):
+                            _sorted_scores_cache.append({
+                                'key': key,
+                                'score': item.get('final_score', 0),
+                                'data': item
+                            })
+                    _sorted_scores_cache.sort(key=lambda x: x['score'])
+                    
                     print(f"[Health] 已加载 {len(_health_cache)} 个项目的健康度评分")
         return _health_cache or {}
     except Exception as e:
@@ -220,10 +234,12 @@ async def get_similar_projects(
     limit: int = Query(5, ge=1, le=20, description="返回相似项目的数量")
 ):
     """
-    获取与指定项目健康度相似的项目
+    获取与指定项目健康度相似的项目（优化版）
     
-    返回健康度分数接近的其他项目列表
+    使用预排序列表 + 双指针算法，O(limit) 复杂度找出最接近的项目
     """
+    import bisect
+    
     project_key = normalize_project_name(project)
     health_scores = load_health_scores()
     
@@ -238,13 +254,41 @@ async def get_similar_projects(
     current_score = health_scores[project_key].get('final_score', 0)
     current_grade = health_scores[project_key].get('grade', 'N/A')
     
-    # 计算所有项目与当前项目的分数差距
+    # 使用预排序的缓存（二分查找 + 双指针）
+    if not _sorted_scores_cache:
+        return {
+            'project': project_key,
+            'current_score': current_score,
+            'current_grade': current_grade,
+            'similar_projects': []
+        }
+    
+    # 二分查找当前分数的位置
+    scores_only = [item['score'] for item in _sorted_scores_cache]
+    insert_pos = bisect.bisect_left(scores_only, current_score)
+    
+    # 双指针向两边扩展，找出最接近的 limit 个项目
     similar_projects = []
-    for key, data in health_scores.items():
-        if key == project_key or data.get('error'):
+    left = insert_pos - 1
+    right = insert_pos
+    n = len(_sorted_scores_cache)
+    
+    while len(similar_projects) < limit and (left >= 0 or right < n):
+        left_diff = float('inf') if left < 0 else abs(_sorted_scores_cache[left]['score'] - current_score)
+        right_diff = float('inf') if right >= n else abs(_sorted_scores_cache[right]['score'] - current_score)
+        
+        if left_diff <= right_diff:
+            item = _sorted_scores_cache[left]
+            left -= 1
+        else:
+            item = _sorted_scores_cache[right]
+            right += 1
+        
+        # 跳过当前项目自己
+        if item['key'] == project_key:
             continue
         
-        score_diff = abs(data['final_score'] - current_score)
+        data = item['data']
         similar_projects.append({
             'project': data['project'],
             'repo_name': data['repo_name'],
@@ -252,17 +296,14 @@ async def get_similar_projects(
             'grade': data['grade'],
             'grade_label': data['grade_label'],
             'grade_color': data['grade_color'],
-            'score_diff': round(score_diff, 2)
+            'score_diff': round(abs(data['final_score'] - current_score), 2)
         })
-    
-    # 按分数差距排序，取最接近的项目
-    similar_projects.sort(key=lambda x: x['score_diff'])
     
     return {
         'project': project_key,
         'current_score': current_score,
         'current_grade': current_grade,
-        'similar_projects': similar_projects[:limit]
+        'similar_projects': similar_projects
     }
 
 
@@ -276,6 +317,7 @@ async def get_project_languages(
     从 GitHub API 获取项目的语言统计信息
     """
     import httpx
+    from app.config import settings
     
     # 转换项目名格式
     if '_' in project and '/' not in project:
@@ -284,14 +326,20 @@ async def get_project_languages(
         repo_name = project
     
     try:
+        # 构建请求头
+        headers = {
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": "OpenPulse-HealthAnalyzer"
+        }
+        # 如果配置了 GitHub Token，添加认证头以提高速率限制
+        if settings.GITHUB_TOKEN:
+            headers["Authorization"] = f"token {settings.GITHUB_TOKEN}"
+        
         async with httpx.AsyncClient(timeout=10.0) as client:
             # 调用 GitHub API 获取语言信息
             response = await client.get(
                 f"https://api.github.com/repos/{repo_name}/languages",
-                headers={
-                    "Accept": "application/vnd.github.v3+json",
-                    "User-Agent": "OpenPulse-HealthAnalyzer"
-                }
+                headers=headers
             )
             
             if response.status_code == 200:

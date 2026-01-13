@@ -96,7 +96,7 @@ def search_projects_data(
         # 获取该项目的forks数
         try:
             forks_result = db.execute(
-                text("SELECT MAX(total_fork) FROM forks WHERE project = :project"),
+                text("SELECT MAX(total_forks) FROM forks WHERE project = :project"),
                 {'project': project}
             ).fetchone()
             forks = forks_result[0] if forks_result and forks_result[0] else 0
@@ -169,7 +169,7 @@ async def get_project_list(
 
 @router.get("/projects/top", response_model=ProjectSearchResponse)
 async def get_top_projects(
-    limit: int = Query(3, ge=1, le=10, description="返回数量"),
+    limit: int = Query(3, ge=1, le=50, description="返回数量"),
     db: Session = Depends(get_db)
 ):
     """获取排名靠前的项目（按Stars排序）"""

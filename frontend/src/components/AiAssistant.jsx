@@ -1,5 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 
+// API配置 - 通过Vite代理避免CORS问题
+const API_BASE_URL = '/chat-api/chat/api/019bb745-33e9-7e73-b8da-ae53dc681b23';
+const API_KEY = 'agent-5b6b2192d6c61a692307de2d16c5e302';
+
 // AI图标
 const AiIcon = () => (
   <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -14,14 +18,27 @@ const CloseIcon = () => (
   </svg>
 );
 
+// 发送图标
+const SendIcon = () => (
+  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+  </svg>
+);
+
 const AiAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState({ x: 30, y: window.innerHeight - 90 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [messages, setMessages] = useState([
+    { role: 'assistant', content: '你好！我是 OpenPulse AI 助手，有什么可以帮助你的吗？' }
+  ]);
+  const [inputValue, setInputValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [conversationId, setConversationId] = useState('');
   const iconRef = useRef(null);
   const chatContainerRef = useRef(null);
+  const messagesEndRef = useRef(null);
 
   // 处理拖拽开始
   const handleMouseDown = (e) => {
@@ -67,6 +84,15 @@ const AiAssistant = () => {
     };
   }, [isDragging, dragOffset]);
 
+  // 自动滚动到底部
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   // 点击图标
   const handleClick = () => {
     if (!isDragging) {
@@ -74,9 +100,70 @@ const AiAssistant = () => {
     }
   };
 
-  // iframe加载完成
-  const handleIframeLoad = () => {
-    setIsLoaded(true);
+  // 发送消息到API (Dify格式)
+  const sendMessage = async () => {
+    if (!inputValue.trim() || isLoading) return;
+
+    const userMessage = inputValue.trim();
+    setInputValue('');
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    setIsLoading(true);
+
+    try {
+      const requestBody = {
+        inputs: {},
+        query: userMessage,
+        response_mode: 'blocking',
+        user: 'openpulse-user-' + Date.now()
+      };
+      
+      // 如果有会话ID，则传入以保持上下文
+      if (conversationId) {
+        requestBody.conversation_id = conversationId;
+      }
+
+      const response = await fetch(API_BASE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${API_KEY}`
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API错误响应:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // 保存会话ID以保持上下文
+      if (data.conversation_id) {
+        setConversationId(data.conversation_id);
+      }
+      
+      const assistantReply = data.answer || data.message || data.response || data.content || '抱歉，我暂时无法回答这个问题。';
+      
+      setMessages(prev => [...prev, { role: 'assistant', content: assistantReply }]);
+    } catch (error) {
+      console.error('AI请求失败:', error);
+      setMessages(prev => [...prev, { 
+        role: 'assistant', 
+        content: '抱歉，连接服务时出现问题，请稍后重试。' 
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 处理按键事件
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
   };
 
   // 计算聊天框位置
@@ -171,28 +258,57 @@ const AiAssistant = () => {
             </button>
           </div>
 
-          {/* 主体 - iframe */}
+          {/* 主体 - 消息列表 */}
           <div className="ai-chat-body">
-            {/* 加载提示 */}
-            {!isLoaded && (
-              <div className="ai-chat-loading">
-                <div className="ai-loading-dots">
-                  <span></span>
-                  <span></span>
-                  <span></span>
+            <div className="ai-messages-container">
+              {messages.map((msg, index) => (
+                <div key={index} className={`ai-message ${msg.role}`}>
+                  {msg.role === 'assistant' && (
+                    <div className="ai-message-avatar">
+                      <AiIcon />
+                    </div>
+                  )}
+                  <div className={`ai-message-bubble ${msg.role}`}>
+                    {msg.content}
+                  </div>
                 </div>
-                <p>正在连接 AI 服务...</p>
-              </div>
-            )}
-            
-            {/* Coze嵌入 */}
-            <iframe
-              className="ai-chat-iframe"
-              src="https://www.coze.cn/store/bot/7513893821823926281?bot_id=true&hide_bot_info=1"
-              onLoad={handleIframeLoad}
-              style={{ opacity: isLoaded ? 1 : 0 }}
-              allow="microphone"
+              ))}
+              {isLoading && (
+                <div className="ai-message assistant">
+                  <div className="ai-message-avatar">
+                    <AiIcon />
+                  </div>
+                  <div className="ai-message-bubble assistant">
+                    <div className="ai-typing-indicator">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+
+          {/* 输入框 */}
+          <div className="ai-chat-input-container">
+            <input
+              type="text"
+              className="ai-chat-input"
+              placeholder="输入您的问题..."
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={isLoading}
             />
+            <button
+              className="ai-chat-send-btn"
+              onClick={sendMessage}
+              disabled={isLoading || !inputValue.trim()}
+            >
+              <SendIcon />
+            </button>
           </div>
         </div>
       )}

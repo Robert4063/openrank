@@ -17,6 +17,9 @@ class Settings:
     DB_PASSWORD: str = os.getenv("DB_PASSWORD", "root")
     DB_NAME: str = os.getenv("DB_NAME", "openrankdata")
     
+    # GitHub API 配置（可选，用于提高 API 速率限制）
+    GITHUB_TOKEN: Optional[str] = os.getenv("GITHUB_TOKEN", None)
+    
     # API配置
     API_V1_PREFIX: str = "/api/v1"
     

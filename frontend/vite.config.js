@@ -6,6 +6,13 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
+      '/chat-api': {
+        target: 'http://41cadc32.r1.cpolar.top',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/chat-api/, ''),
+        timeout: 30000,
+        proxyTimeout: 30000,
+      },
       '/api': {
         target: 'http://127.0.0.1:8000',
         changeOrigin: true,

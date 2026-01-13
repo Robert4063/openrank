@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import TrendChart from '../components/TrendChart';
 import ContributorsChart from '../components/ContributorsChart';
 import HealthScore from '../components/HealthScore';
-import { ErrorAlert } from '../components/ErrorLogModal';
+import { useErrorContext } from '../context/ErrorContext';
 import { getProjectTrends, getContributors, getHealthScore } from '../api/github';
 
 // 返回图标
@@ -64,6 +64,7 @@ const SummaryCard = ({ icon, label, value, color }) => (
 const ProjectPage = () => {
   const { projectKey } = useParams();
   const navigate = useNavigate();
+  const { addError } = useErrorContext();
   
   const [projectTrends, setProjectTrends] = useState(null);
   const [contributorsData, setContributorsData] = useState(null);
@@ -72,7 +73,6 @@ const ProjectPage = () => {
   const [isLoadingContributors, setIsLoadingContributors] = useState(true);
   const [isLoadingHealth, setIsLoadingHealth] = useState(true);
   const [error, setError] = useState(null);
-  const [errorDetails, setErrorDetails] = useState(null); // 存储详细错误信息
   const [loadingProgress, setLoadingProgress] = useState(0);
 
   // 将 project_key 转换为显示名称 (owner_repo -> owner/repo)
@@ -95,7 +95,6 @@ const ProjectPage = () => {
     setContributorsData(null);
     setHealthData(null);
     setError(null);
-    setErrorDetails(null);
     setLoadingProgress(0);
     setIsLoadingTrends(true);
     setIsLoadingContributors(true);
@@ -110,9 +109,15 @@ const ProjectPage = () => {
       .catch(err => {
         console.error('加载趋势数据失败:', err);
         setError(err.message || '加载趋势数据失败');
-        // 存储详细错误信息
+        // 添加到全局错误
         if (err.details) {
-          setErrorDetails(err.details);
+          addError(err.details);
+        } else {
+          addError({
+            error_type: 'DataLoadError',
+            message: err.message || '加载趋势数据失败',
+            traceback: null
+          });
         }
         updateProgress();
       })
@@ -127,12 +132,15 @@ const ProjectPage = () => {
       })
       .catch(err => {
         console.error('加载贡献者数据失败:', err);
-        // 如果还没有错误，设置这个错误
-        if (!error) {
-          setError(err.message || '加载贡献者数据失败');
-          if (err.details) {
-            setErrorDetails(err.details);
-          }
+        // 添加到全局错误
+        if (err.details) {
+          addError(err.details);
+        } else {
+          addError({
+            error_type: 'DataLoadError',
+            message: err.message || '加载贡献者数据失败',
+            traceback: null
+          });
         }
         updateProgress();
       })
@@ -147,12 +155,15 @@ const ProjectPage = () => {
       })
       .catch(err => {
         console.error('加载健康度数据失败:', err);
-        // 如果还没有错误，设置这个错误
-        if (!error) {
-          setError(err.message || '加载健康度数据失败');
-          if (err.details) {
-            setErrorDetails(err.details);
-          }
+        // 添加到全局错误
+        if (err.details) {
+          addError(err.details);
+        } else {
+          addError({
+            error_type: 'DataLoadError',
+            message: err.message || '加载健康度数据失败',
+            traceback: null
+          });
         }
         updateProgress();
       })
@@ -162,7 +173,7 @@ const ProjectPage = () => {
 
     // 等待所有请求完成
     Promise.allSettled([loadTrends, loadContributors, loadHealth]);
-  }, [projectKey]);
+  }, [projectKey, addError]);
 
   // 检查是否正在加载
   const isAnyLoading = isLoadingTrends || isLoadingContributors || isLoadingHealth;
@@ -225,13 +236,21 @@ const ProjectPage = () => {
 
       {/* 主内容区 */}
       <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* 错误提示 - 点击可查看详细日志 */}
+        {/* 错误简单提示 */}
         {error && (
-          <ErrorAlert 
-            message={error} 
-            errorDetails={errorDetails}
-            className="mb-6"
-          />
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <p className="text-red-700 font-medium">{error}</p>
+            </div>
+            <p className="text-red-400 text-xs mt-2 ml-11">
+              点击右下角的错误图标查看详细日志
+            </p>
+          </div>
         )}
 
         {/* 项目标题 */}

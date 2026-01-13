@@ -244,4 +244,18 @@ export const getProjectLanguages = async (project) => {
   return response.data;
 };
 
+/**
+ * 获取所有项目健康度评分排行榜
+ * @param {number} limit - 返回数量（可选）
+ */
+export const getHealthRanking = async (limit = 15) => {
+  const response = await api.get('/health/all');
+  const data = response.data;
+  // 限制返回数量
+  return {
+    total: data.total,
+    items: data.scores.slice(0, limit)
+  };
+};
+
 export default api;

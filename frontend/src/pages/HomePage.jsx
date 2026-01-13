@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { searchProjects, getTopProjects } from '../api/github';
-import { ErrorAlert, ErrorLogModal } from '../components/ErrorLogModal';
+import { searchProjects, getTopProjects, getHealthRanking } from '../api/github';
+import { useErrorContext } from '../context/ErrorContext';
 import HelpModal, { HelpIcon } from '../components/HelpModal';
 
 // 搜索图标组件
@@ -58,72 +58,52 @@ const LoadingSpinner = () => (
   </div>
 );
 
-// 活跃度排行榜 - 长方形卡片组件
-const TopProjectCard = ({ project, rank, onClick }) => {
-  const colorSchemes = {
-    1: {
-      bg: 'bg-gradient-to-r from-amber-50 to-orange-50',
-      border: 'border-amber-200',
-      badge: 'bg-amber-500',
-      text: 'text-amber-700',
-      label: '🥇 TOP 1'
-    },
-    2: {
-      bg: 'bg-gradient-to-r from-slate-50 to-gray-100',
-      border: 'border-gray-300',
-      badge: 'bg-gray-500',
-      text: 'text-gray-700',
-      label: '🥈 TOP 2'
-    },
-    3: {
-      bg: 'bg-gradient-to-r from-orange-50 to-amber-50',
-      border: 'border-orange-200',
-      badge: 'bg-orange-400',
-      text: 'text-orange-700',
-      label: '🥉 TOP 3'
-    }
+// 潜力项目卡片组件（适合侧边栏）- 显示健康度评分
+const PotentialProjectCard = ({ project, rank, onClick }) => {
+  const getRankStyle = (rank) => {
+    if (rank === 1) return { bg: 'bg-emerald-50', border: 'border-emerald-200' };
+    if (rank === 2) return { bg: 'bg-blue-50', border: 'border-blue-200' };
+    if (rank === 3) return { bg: 'bg-purple-50', border: 'border-purple-200' };
+    return { bg: 'bg-gray-50', border: 'border-gray-200' };
   };
 
-  const scheme = colorSchemes[rank] || colorSchemes[3];
+  const style = getRankStyle(rank);
+  const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+
+  // 健康度颜色
+  const getScoreColor = (score) => {
+    if (score >= 80) return 'text-emerald-600 bg-emerald-100';
+    if (score >= 60) return 'text-blue-600 bg-blue-100';
+    if (score >= 40) return 'text-amber-600 bg-amber-100';
+    return 'text-red-600 bg-red-100';
+  };
+
+  const scoreColor = getScoreColor(project.final_score);
 
   return (
     <div 
       onClick={onClick}
-      className={`relative cursor-pointer transform transition-all duration-300 hover:scale-[1.02] hover:shadow-lg
-                  ${scheme.bg} ${scheme.border} border-2 rounded-xl p-5 w-full`}
+      className={`cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-md
+                  ${style.bg} ${style.border} border rounded-lg p-3`}
     >
-      {/* 排名徽章 */}
-      <div className={`absolute -top-2 -left-2 ${scheme.badge} text-white text-xs font-bold 
-                       px-3 py-1 rounded-full shadow-md`}>
-        {scheme.label}
-      </div>
-      
-      {/* 内容区域 */}
-      <div className="pt-2">
-        {/* 项目名称 */}
-        <h3 className={`font-bold text-lg ${scheme.text} mb-1 truncate`}
-            style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>
-          {project.repo_name?.split('/')[1] || project.repo_name}
-        </h3>
+      <div className="flex items-center gap-2">
+        {/* 排名 */}
+        <span className="text-lg flex-shrink-0" style={{ minWidth: '24px' }}>{medal}</span>
         
-        {/* 组织名称 */}
-        <p className="text-gray-500 text-sm mb-3 truncate">
-          {project.repo_name?.split('/')[0]}
-        </p>
+        {/* 项目信息 */}
+        <div className="flex-1 min-w-0">
+          <h4 className="font-semibold text-sm text-gray-800 truncate">
+            {project.repo_name?.split('/')[1] || project.repo_name}
+          </h4>
+          <p className="text-xs text-gray-500 truncate">
+            {project.repo_name?.split('/')[0]}
+          </p>
+        </div>
         
-        {/* 统计数据 */}
-        <div className="flex items-center gap-4 text-sm">
-          <span className="flex items-center gap-1.5">
-            <span className="text-amber-500">⭐</span>
-            <span className="font-semibold text-gray-700">
-              {(project.stars / 1000).toFixed(1)}k
-            </span>
-          </span>
-          <span className="flex items-center gap-1.5">
-            <span className="text-cyan-600">🍴</span>
-            <span className="font-semibold text-gray-700">
-              {project.forks ? (project.forks / 1000).toFixed(1) + 'k' : '-'}
-            </span>
+        {/* 健康度评分 */}
+        <div className="flex-shrink-0">
+          <span className={`text-xs font-bold px-2 py-1 rounded-lg ${scoreColor}`}>
+            {Math.round(project.final_score)}分
           </span>
         </div>
       </div>
@@ -131,112 +111,52 @@ const TopProjectCard = ({ project, rank, onClick }) => {
   );
 };
 
-// 活跃度排行榜 - 轮播展示区域
-const Top3Section = ({ projects, onProjectClick, isLoading, error, errorDetails }) => {
-  const [showErrorModal, setShowErrorModal] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  
-  // 自动轮播 - 每2秒切换
-  useEffect(() => {
-    if (!projects || projects.length === 0) return;
-    
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % projects.length);
-    }, 2000);
-    
-    return () => clearInterval(timer);
-  }, [projects]);
-  
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="flex gap-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="w-64 h-32 rounded-xl bg-gray-100 animate-pulse border border-gray-200"></div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // 数据加载失败时显示友好提示
-  if (error || (!projects || projects.length === 0)) {
-    const hasDetails = errorDetails && (errorDetails.traceback || errorDetails.error_type);
-    
-    return (
-      <div className="relative py-8 mb-6">
-        <h2 className="text-center text-xl font-semibold mb-6 text-gray-700 tracking-wide"
+// 最具潜力项目 - 左侧侧边栏组件（基于健康度排名）
+const PotentialProjectsSidebar = ({ projects, onProjectClick, isLoading, error }) => {
+  return (
+    <div className="fixed left-0 top-0 h-[75vh] w-[12.5%] min-w-[160px] max-w-[200px] 
+                    bg-white/95 backdrop-blur-sm border-r border-gray-200 shadow-sm z-30
+                    flex flex-col">
+      {/* 标题 */}
+      <div className="p-3 border-b border-gray-100">
+        <h2 className="text-sm font-bold text-gray-700 flex items-center gap-1.5"
             style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>
-          <span className="text-amber-500">🏆</span> 活跃度排行榜
+          <span className="text-emerald-500">🌟</span>
+          <span>最具潜力</span>
         </h2>
-        <div 
-          className={`flex flex-col items-center justify-center py-8 px-4 rounded-xl bg-gray-50
-                     ${hasDetails ? 'cursor-pointer hover:bg-red-50 transition-colors' : ''}`}
-          onClick={() => hasDetails && setShowErrorModal(true)}
-        >
-          <div className="text-4xl mb-4 opacity-50">⚠️</div>
-          <p className="text-gray-600 text-center mb-2">
-            {error || '无法加载排行榜数据'}
-          </p>
-          <p className="text-gray-500 text-sm text-center">
-            请确保数据库服务已启动，然后刷新页面
-          </p>
-          {hasDetails && (
-            <p className="text-red-500/70 text-xs mt-3 flex items-center gap-1">
-              <span>📋</span>
-              点击查看详细错误日志
+      </div>
+      
+      {/* 内容区 */}
+      <div className="flex-1 overflow-y-auto p-2 space-y-2">
+        {isLoading ? (
+          // 加载骨架屏
+          [...Array(5)].map((_, i) => (
+            <div key={i} className="h-14 rounded-lg bg-gray-100 animate-pulse"></div>
+          ))
+        ) : error || !projects?.length ? (
+          // 错误状态
+          <div className="flex flex-col items-center justify-center py-6 px-2 text-center">
+            <div className="text-2xl mb-2 opacity-50">⚠️</div>
+            <p className="text-gray-500 text-xs">
+              {error || '暂无数据'}
             </p>
-          )}
-        </div>
-        
-        {/* 错误日志弹窗 */}
-        {hasDetails && (
-          <ErrorLogModal 
-            isOpen={showErrorModal} 
-            onClose={() => setShowErrorModal(false)} 
-            errorDetails={errorDetails} 
-          />
+          </div>
+        ) : (
+          // 项目列表
+          projects.map((project, index) => (
+            <PotentialProjectCard
+              key={project.project || index}
+              project={project}
+              rank={index + 1}
+              onClick={() => onProjectClick(project)}
+            />
+          ))
         )}
       </div>
-    );
-  }
-
-  return (
-    <div className="relative py-8 mb-6">
-      {/* 标题 */}
-      <h2 className="text-center text-xl font-semibold mb-8 text-slate-700 tracking-wide"
-          style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>
-        <span className="text-amber-500">🏆</span> 活跃度排行榜
-      </h2>
       
-      {/* 轮播容器 */}
-      <div className="activity-slider max-w-sm mx-auto">
-        <div 
-          className="activity-slider-track"
-          style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-        >
-          {projects.map((project, index) => (
-            <div key={project.id || index} className="activity-slider-item px-2">
-              <TopProjectCard
-                project={project}
-                rank={index + 1}
-                onClick={() => onProjectClick(project)}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-      
-      {/* 轮播指示器 */}
-      <div className="flex justify-center gap-2 mt-6">
-        {projects.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentIndex(index)}
-            className={`slider-dot ${index === currentIndex ? 'active' : ''}`}
-            aria-label={`切换到第 ${index + 1} 个项目`}
-          />
-        ))}
+      {/* 底部信息 */}
+      <div className="p-2 border-t border-gray-100 text-center">
+        <span className="text-[10px] text-gray-400">基于健康度评分排名</span>
       </div>
     </div>
   );
@@ -274,30 +194,295 @@ const ProjectCard = ({ project, onClick }) => (
   </div>
 );
 
+// 热门项目轮播卡片 - 更大更精美的卡片
+const CarouselCard = ({ project, rank, onClick }) => {
+  const getRankBadge = (rank) => {
+    if (rank === 1) return { emoji: '🥇', bg: 'from-amber-400 to-yellow-500', text: '第1名' };
+    if (rank === 2) return { emoji: '🥈', bg: 'from-slate-300 to-slate-400', text: '第2名' };
+    if (rank === 3) return { emoji: '🥉', bg: 'from-orange-400 to-amber-500', text: '第3名' };
+    return { emoji: '🏅', bg: 'from-purple-400 to-indigo-500', text: `第${rank}名` };
+  };
+
+  const badge = getRankBadge(rank);
+
+  return (
+    <div
+      onClick={onClick}
+      className="flex-shrink-0 w-72 p-5 rounded-2xl cursor-pointer transition-all duration-300
+                bg-white border border-gray-200 
+                hover:border-purple-300 hover:shadow-xl hover:shadow-purple-100 hover:-translate-y-2
+                group"
+      style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}
+    >
+      {/* 排名徽章 */}
+      <div className="flex items-center justify-between mb-4">
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r ${badge.bg} text-white text-xs font-bold shadow-sm`}>
+          <span>{badge.emoji}</span>
+          <span>{badge.text}</span>
+        </div>
+        <span className="text-gray-300 group-hover:text-purple-400 transition-colors text-lg">→</span>
+      </div>
+
+      {/* 项目名称 */}
+      <h3 className="font-bold text-gray-800 text-lg mb-1 truncate group-hover:text-purple-600 transition-colors">
+        {project.repo_name?.split('/')[1] || project.repo_name}
+      </h3>
+      <p className="text-sm text-gray-400 mb-4 truncate">
+        {project.repo_name?.split('/')[0]}
+      </p>
+
+      {/* 统计数据 */}
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-1.5 bg-amber-50 px-3 py-1.5 rounded-lg">
+          <span className="text-amber-500">⭐</span>
+          <span className="text-amber-600 font-bold text-sm">
+            {project.stars >= 1000 ? `${(project.stars / 1000).toFixed(1)}k` : project.stars}
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5 bg-cyan-50 px-3 py-1.5 rounded-lg">
+          <span className="text-cyan-500">🍴</span>
+          <span className="text-cyan-600 font-bold text-sm">
+            {project.forks >= 1000 ? `${(project.forks / 1000).toFixed(1)}k` : project.forks || 0}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 热门项目轮播组件
+const TopProjectsCarousel = ({ projects, onProjectClick, isLoading }) => {
+  const scrollRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+
+  // 检查滚动状态
+  const checkScrollButtons = useCallback(() => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 10);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkScrollButtons();
+    const scrollEl = scrollRef.current;
+    if (scrollEl) {
+      scrollEl.addEventListener('scroll', checkScrollButtons);
+      return () => scrollEl.removeEventListener('scroll', checkScrollButtons);
+    }
+  }, [checkScrollButtons, projects]);
+
+  // 自动滚动
+  useEffect(() => {
+    if (!projects?.length || isDragging) return;
+    
+    const interval = setInterval(() => {
+      if (scrollRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+        const maxScroll = scrollWidth - clientWidth;
+        
+        if (scrollLeft >= maxScroll - 10) {
+          // 回到开头
+          scrollRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          // 向右滚动一个卡片宽度
+          scrollRef.current.scrollBy({ left: 300, behavior: 'smooth' });
+        }
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [projects, isDragging]);
+
+  // 按钮滚动
+  const scroll = (direction) => {
+    if (scrollRef.current) {
+      const scrollAmount = direction === 'left' ? -300 : 300;
+      scrollRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  // 鼠标拖拽滚动
+  const handleMouseDown = (e) => {
+    setIsDragging(true);
+    setStartX(e.pageX - scrollRef.current.offsetLeft);
+    setScrollLeft(scrollRef.current.scrollLeft);
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    scrollRef.current.scrollLeft = scrollLeft - walk;
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="py-8">
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <span className="text-2xl">🔥</span>
+          <h2 className="text-xl font-bold text-gray-700">热门项目排行</h2>
+        </div>
+        <div className="flex gap-4 overflow-hidden px-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="flex-shrink-0 w-72 h-44 rounded-2xl bg-gray-100 animate-pulse"></div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!projects?.length) return null;
+
+  return (
+    <div className="py-8 relative">
+      {/* 标题 */}
+      <div className="flex items-center justify-center gap-3 mb-6">
+        <span className="text-2xl animate-pulse">🔥</span>
+        <h2 className="text-xl font-bold text-gray-700" style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>
+          热门项目排行
+        </h2>
+        <span className="text-sm text-gray-400 ml-2">基于 Star 数量排序</span>
+      </div>
+
+      {/* 轮播容器 */}
+      <div className="relative group">
+        {/* 左滚动按钮 */}
+        <button
+          onClick={() => scroll('left')}
+          className={`absolute left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full 
+                     bg-white/90 border border-gray-200 shadow-lg
+                     flex items-center justify-center
+                     transition-all duration-300
+                     ${canScrollLeft 
+                       ? 'opacity-0 group-hover:opacity-100 hover:bg-purple-50 hover:border-purple-300' 
+                       : 'opacity-0 cursor-not-allowed'}`}
+          disabled={!canScrollLeft}
+        >
+          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        {/* 右滚动按钮 */}
+        <button
+          onClick={() => scroll('right')}
+          className={`absolute right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full 
+                     bg-white/90 border border-gray-200 shadow-lg
+                     flex items-center justify-center
+                     transition-all duration-300
+                     ${canScrollRight 
+                       ? 'opacity-0 group-hover:opacity-100 hover:bg-purple-50 hover:border-purple-300' 
+                       : 'opacity-0 cursor-not-allowed'}`}
+          disabled={!canScrollRight}
+        >
+          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+
+        {/* 渐变遮罩 */}
+        <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-gray-50 to-transparent z-[5] pointer-events-none"></div>
+        <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-gray-50 to-transparent z-[5] pointer-events-none"></div>
+
+        {/* 滚动区域 */}
+        <div
+          ref={scrollRef}
+          className={`flex gap-5 overflow-x-auto px-8 py-2 scrollbar-hide scroll-smooth ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          style={{ 
+            scrollbarWidth: 'none', 
+            msOverflowStyle: 'none',
+            WebkitOverflowScrolling: 'touch'
+          }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
+        >
+          {projects.map((project, index) => (
+            <CarouselCard
+              key={project.id || index}
+              project={project}
+              rank={index + 1}
+              onClick={() => !isDragging && onProjectClick(project)}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* 滚动提示 */}
+      <p className="text-center text-xs text-gray-400 mt-4">
+        ← 拖拽或使用按钮滑动查看更多 →
+      </p>
+    </div>
+  );
+};
+
 const HomePage = () => {
   const navigate = useNavigate();
+  const { addError } = useErrorContext();
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState(null);
-  const [errorDetails, setErrorDetails] = useState(null); // 存储详细错误信息
   const [topProjects, setTopProjects] = useState([]);
   const [isLoadingTop, setIsLoadingTop] = useState(true);
   const [topError, setTopError] = useState(null);
-  const [topErrorDetails, setTopErrorDetails] = useState(null); // Top项目错误详情
-  const [showHelpModal, setShowHelpModal] = useState(false); // 帮助弹窗状态
+  const [showHelpModal, setShowHelpModal] = useState(false);
+  
+  // 健康度排名数据（用于左侧侧边栏）
+  const [healthRanking, setHealthRanking] = useState([]);
+  const [isLoadingHealth, setIsLoadingHealth] = useState(true);
+  const [healthError, setHealthError] = useState(null);
 
   // 防抖搜索
   const [debouncedKeyword, setDebouncedKeyword] = useState('');
 
-  // 加载Top 3项目
+  // 加载健康度排名（用于左侧侧边栏"最具潜力"）
+  useEffect(() => {
+    const fetchHealthRanking = async () => {
+      setIsLoadingHealth(true);
+      setHealthError(null);
+      try {
+        const result = await getHealthRanking(5); // 只加载前5个
+        if (!result.items || result.items.length === 0) {
+          setHealthError('暂无健康度数据');
+        }
+        setHealthRanking(result.items || []);
+      } catch (err) {
+        console.error('获取健康度排名失败:', err);
+        setHealthError(err.message || '无法获取健康度排名');
+        if (err.details) {
+          addError(err.details);
+        }
+      } finally {
+        setIsLoadingHealth(false);
+      }
+    };
+    fetchHealthRanking();
+  }, [addError]);
+
+  // 加载Top项目 - 用于轮播（基于 Star 数量）
   useEffect(() => {
     const fetchTopProjects = async () => {
       setIsLoadingTop(true);
       setTopError(null);
-      setTopErrorDetails(null);
       try {
-        const result = await getTopProjects(3);
+        const result = await getTopProjects(15);
         if (!result.items || result.items.length === 0) {
           setTopError('数据库连接失败或暂无数据');
         }
@@ -305,16 +490,21 @@ const HomePage = () => {
       } catch (err) {
         console.error('获取Top项目失败:', err);
         setTopError(err.message || '无法连接到服务器，请检查后端服务');
-        // 存储详细错误信息
         if (err.details) {
-          setTopErrorDetails(err.details);
+          addError(err.details);
+        } else {
+          addError({
+            error_type: 'NetworkError',
+            message: err.message || '获取Top项目失败',
+            traceback: null
+          });
         }
       } finally {
         setIsLoadingTop(false);
       }
     };
     fetchTopProjects();
-  }, []);
+  }, [addError]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -332,7 +522,6 @@ const HomePage = () => {
 
     setIsSearching(true);
     setError(null);
-    setErrorDetails(null);
 
     try {
       const result = await searchProjects({
@@ -343,15 +532,20 @@ const HomePage = () => {
     } catch (err) {
       console.error('搜索失败:', err);
       setError(err.message || '搜索失败，请确保后端服务已启动');
-      // 存储详细错误信息
       if (err.details) {
-        setErrorDetails(err.details);
+        addError(err.details);
+      } else {
+        addError({
+          error_type: 'SearchError',
+          message: err.message || '搜索失败',
+          traceback: null
+        });
       }
       setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
-  }, [debouncedKeyword]);
+  }, [debouncedKeyword, addError]);
 
   // 当关键词变化时触发搜索
   useEffect(() => {
@@ -360,12 +554,21 @@ const HomePage = () => {
 
   // 点击项目跳转详情页
   const handleProjectClick = (project) => {
-    const projectKey = project.project_key || project.repo_name.replace('/', '_');
+    // 健康度排名的项目格式可能不同
+    const projectKey = project.project_key || project.project || project.repo_name?.replace('/', '_');
     navigate(`/project/${encodeURIComponent(projectKey)}`);
   };
 
   return (
     <div className="min-h-screen grid-bg">
+      {/* 左侧最具潜力项目侧边栏（基于健康度排名） */}
+      <PotentialProjectsSidebar 
+        projects={healthRanking} 
+        onProjectClick={handleProjectClick}
+        isLoading={isLoadingHealth}
+        error={healthError}
+      />
+
       {/* 右上角帮助按钮 */}
       <button
         onClick={() => setShowHelpModal(true)}
@@ -386,148 +589,168 @@ const HomePage = () => {
       {/* 帮助弹窗 */}
       <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)} />
 
-      {/* 顶部 Hero 区域 */}
-      <div className="relative overflow-hidden">
-        {/* 顶部装饰线 */}
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-300/40 to-transparent"></div>
-        
-        <div className="max-w-4xl mx-auto px-6 py-14 text-center relative">
-          {/* OP Logo */}
-          <div className="flex items-center justify-center mb-4">
-            <div className="relative">
-              <OPLogo size={72} />
-            </div>
-          </div>
+      {/* 主内容区域 - 添加左侧边距避开侧边栏 */}
+      <div className="ml-[12.5%] min-w-0">
+        {/* 顶部 Hero 区域 */}
+        <div className="relative overflow-hidden">
+          {/* 顶部装饰线 */}
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-purple-300/40 to-transparent"></div>
           
-          {/* 标题 */}
-          <h1 className="text-5xl font-bold mb-3 tracking-tight">
-            <span className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-600 bg-clip-text text-transparent"
-                  style={{ fontFamily: '"Noto Sans SC", "PingFang SC", sans-serif' }}>
-              OpenPulse
-            </span>
-          </h1>
-          <p className="text-lg text-slate-500 mb-10" style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>
-            探索开源项目数据，发现社区趋势
-          </p>
-
-          {/* 大搜索框 - 浅色风格 */}
-          <div className="relative max-w-2xl mx-auto">
-            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-400">
-              <SearchIcon />
-            </div>
-            <input
-              type="text"
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              placeholder="搜索项目 (例如: react, vue, tensorflow...)"
-              className="w-full pl-14 pr-6 py-4 bg-white border border-gray-200 rounded-xl 
-                       text-gray-800 text-lg placeholder-gray-400
-                       focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100
-                       transition-all duration-300 shadow-sm"
-              style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}
-            />
-            {isSearching && (
-              <div className="absolute inset-y-0 right-0 pr-5 flex items-center">
-                <div className="w-5 h-5 border-2 border-purple-200 border-t-purple-500 rounded-full animate-spin"></div>
+          <div className="max-w-4xl mx-auto px-6 py-14 text-center relative">
+            {/* OP Logo */}
+            <div className="flex items-center justify-center mb-4">
+              <div className="relative">
+                <OPLogo size={72} />
               </div>
-            )}
-          </div>
-
-          {/* 快捷标签 */}
-          <div className="flex flex-wrap justify-center gap-2 mt-5">
-            {['react', 'vue', 'tensorflow', 'pytorch', 'rust'].map(tag => (
-              <button
-                key={tag}
-                onClick={() => setSearchKeyword(tag)}
-                className="px-4 py-1.5 bg-gray-100 border border-gray-200 rounded-full text-sm text-gray-600 
-                         hover:bg-purple-50 hover:text-purple-700 hover:border-purple-300 transition-all"
-              >
-                {tag}
-              </button>
-            ))}
-          </div>
-
-          {/* Top 3 项目展示 */}
-          <Top3Section 
-            projects={topProjects} 
-            onProjectClick={handleProjectClick}
-            isLoading={isLoadingTop}
-            error={topError}
-            errorDetails={topErrorDetails}
-          />
-        </div>
-      </div>
-
-      {/* 分隔线 */}
-      <div className="max-w-4xl mx-auto px-6">
-        <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
-      </div>
-
-      {/* 搜索结果 */}
-      <main className="max-w-6xl mx-auto px-6 py-8 pb-12">
-        {/* 错误提示 - 点击可查看详细日志 */}
-        {error && (
-          <ErrorAlert 
-            message={error} 
-            errorDetails={errorDetails}
-            className="mb-6"
-          />
-        )}
-
-        {/* 搜索提示 */}
-        {!searchKeyword && searchResults.length === 0 && (
-          <div className="text-center py-16">
-            <div className="text-5xl mb-6 opacity-40">🔍</div>
-            <p className="text-slate-600 text-lg" style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>输入关键词搜索开源项目</p>
-            <p className="text-slate-400 mt-2" style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>
-              支持搜索 Star 数 Top 300 的热门项目
-            </p>
-          </div>
-        )}
-
-        {/* 搜索中 */}
-        {isSearching && <LoadingSpinner />}
-
-        {/* 无结果 */}
-        {!isSearching && searchKeyword && searchResults.length === 0 && (
-          <div className="text-center py-16">
-            <div className="text-5xl mb-6 opacity-40">📭</div>
-            <p className="text-slate-600 text-lg" style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>未找到相关项目</p>
-            <p className="text-slate-400 mt-2" style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>试试其他关键词</p>
-          </div>
-        )}
-
-        {/* 结果网格 */}
-        {!isSearching && searchResults.length > 0 && (
-          <>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-slate-700" style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>
-                搜索结果
-                <span className="text-slate-400 font-normal ml-3 text-base">
-                  ({searchResults.length} 个项目)
-                </span>
-              </h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {searchResults.map((project, index) => (
-                <ProjectCard
-                  key={project.id || index}
-                  project={project}
-                  onClick={() => handleProjectClick(project)}
-                />
+            
+            {/* 标题 */}
+            <h1 className="text-5xl font-bold mb-3 tracking-tight">
+              <span className="bg-gradient-to-r from-slate-800 via-slate-700 to-slate-600 bg-clip-text text-transparent"
+                    style={{ fontFamily: '"Noto Sans SC", "PingFang SC", sans-serif' }}>
+                OpenPulse
+              </span>
+            </h1>
+            <p className="text-lg text-slate-500 mb-10" style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>
+              探索开源项目数据，发现社区趋势
+            </p>
+
+            {/* 大搜索框 - 浅色风格 */}
+            <div className="relative max-w-2xl mx-auto">
+              <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-gray-400">
+                <SearchIcon />
+              </div>
+              <input
+                type="text"
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                placeholder="搜索项目 (例如: react, vue, tensorflow...)"
+                className="w-full pl-14 pr-6 py-4 bg-white border border-gray-200 rounded-xl 
+                         text-gray-800 text-lg placeholder-gray-400
+                         focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-100
+                         transition-all duration-300 shadow-sm"
+                style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}
+              />
+              {isSearching && (
+                <div className="absolute inset-y-0 right-0 pr-5 flex items-center">
+                  <div className="w-5 h-5 border-2 border-purple-200 border-t-purple-500 rounded-full animate-spin"></div>
+                </div>
+              )}
+            </div>
+
+            {/* 快捷标签 */}
+            <div className="flex flex-wrap justify-center gap-2 mt-5">
+              {['react', 'vue', 'tensorflow', 'pytorch', 'rust'].map(tag => (
+                <button
+                  key={tag}
+                  onClick={() => setSearchKeyword(tag)}
+                  className="px-4 py-1.5 bg-gray-100 border border-gray-200 rounded-full text-sm text-gray-600 
+                           hover:bg-purple-50 hover:text-purple-700 hover:border-purple-300 transition-all"
+                >
+                  {tag}
+                </button>
               ))}
             </div>
-          </>
-        )}
-      </main>
-
-      {/* 底部 */}
-      <footer className="py-8 border-t border-slate-200">
-        <div className="max-w-6xl mx-auto px-6 text-center text-slate-400 text-sm" style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>
-          <p>OpenPulse - 开源项目数据分析平台</p>
-          <p className="mt-1">基于 GitHub 开源数据构建</p>
+          </div>
         </div>
-      </footer>
+
+        {/* 热门项目轮播 - 只在没有搜索时显示 */}
+        {!searchKeyword && searchResults.length === 0 && (
+          <TopProjectsCarousel 
+            projects={topProjects}
+            onProjectClick={handleProjectClick}
+            isLoading={isLoadingTop}
+          />
+        )}
+
+        {/* 分隔线 */}
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
+        </div>
+
+        {/* 搜索结果 */}
+        <main className="max-w-6xl mx-auto px-6 py-8 pb-12">
+          {/* 错误简单提示 */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                  <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <p className="text-red-700 font-medium">{error}</p>
+              </div>
+              <p className="text-red-400 text-xs mt-2 ml-11">
+                点击右下角的错误图标查看详细日志
+              </p>
+            </div>
+          )}
+
+          {/* 搜索提示 - 只在没有搜索关键词时显示 */}
+          {!searchKeyword && searchResults.length === 0 && !isLoadingTop && topProjects.length > 0 && (
+            <div className="text-center py-8">
+              <p className="text-slate-500 text-sm" style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>
+                👆 浏览上方热门项目，或输入关键词搜索
+              </p>
+            </div>
+          )}
+
+          {/* 搜索提示 - 当没有数据时显示 */}
+          {!searchKeyword && searchResults.length === 0 && !isLoadingTop && topProjects.length === 0 && (
+            <div className="text-center py-16">
+              <div className="text-5xl mb-6 opacity-40">🔍</div>
+              <p className="text-slate-600 text-lg" style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>输入关键词搜索开源项目</p>
+              <p className="text-slate-400 mt-2" style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>
+                支持搜索 Star 数 Top 300 的热门项目
+              </p>
+            </div>
+          )}
+
+          {/* 搜索中 */}
+          {isSearching && <LoadingSpinner />}
+
+          {/* 无结果 */}
+          {!isSearching && searchKeyword && searchResults.length === 0 && (
+            <div className="text-center py-16">
+              <div className="text-5xl mb-6 opacity-40">📭</div>
+              <p className="text-slate-600 text-lg" style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>未找到相关项目</p>
+              <p className="text-slate-400 mt-2" style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>试试其他关键词</p>
+            </div>
+          )}
+
+          {/* 结果网格 */}
+          {!isSearching && searchResults.length > 0 && (
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-slate-700" style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>
+                  搜索结果
+                  <span className="text-slate-400 font-normal ml-3 text-base">
+                    ({searchResults.length} 个项目)
+                  </span>
+                </h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {searchResults.map((project, index) => (
+                  <ProjectCard
+                    key={project.id || index}
+                    project={project}
+                    onClick={() => handleProjectClick(project)}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </main>
+
+        {/* 底部 */}
+        <footer className="py-8 border-t border-slate-200">
+          <div className="max-w-6xl mx-auto px-6 text-center text-slate-400 text-sm" style={{ fontFamily: "'Noto Sans SC', 'PingFang SC', sans-serif" }}>
+            <p>OpenPulse - 开源项目数据分析平台</p>
+            <p className="mt-1">基于 GitHub 开源数据构建</p>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 };

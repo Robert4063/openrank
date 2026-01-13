@@ -10,7 +10,7 @@ const CloseIcon = () => (
 );
 
 /**
- * 相似项目模态框 - 棱角线条风格
+ * 相似项目模态框 - 白色主题风格
  */
 const SimilarProjectsModal = ({ isOpen, onClose, projectName, currentScore, currentGrade }) => {
   const navigate = useNavigate();
@@ -31,13 +31,40 @@ const SimilarProjectsModal = ({ isOpen, onClose, projectName, currentScore, curr
     setError(null);
     
     try {
-      const [similarData, langData] = await Promise.all([
+      // 并行获取数据，但分别处理错误
+      const [similarResult, langResult] = await Promise.allSettled([
         getSimilarProjects(projectName, 5),
         getProjectLanguages(projectName)
       ]);
       
-      setSimilarProjects(similarData.similar_projects || []);
-      setLanguages(langData.languages || []);
+      // 处理相似项目数据
+      if (similarResult.status === 'fulfilled') {
+        const similarData = similarResult.value;
+        const projects = (similarData.similar_projects || []).map(p => ({
+          ...p,
+          // 将分数差距转换为相似度百分比（差距越小，相似度越高）
+          similarity: Math.max(0, (100 - p.score_diff) / 100)
+        }));
+        setSimilarProjects(projects);
+      } else {
+        console.error('获取相似项目失败:', similarResult.reason);
+        setSimilarProjects([]);
+      }
+      
+      // 处理语言数据（即使有错误也尝试提取数据）
+      if (langResult.status === 'fulfilled') {
+        const langData = langResult.value;
+        // 检查是否有 GitHub API 错误
+        if (langData.error) {
+          console.warn('GitHub API 限制:', langData.error);
+          setLanguages([]);
+        } else {
+          setLanguages(langData.languages || []);
+        }
+      } else {
+        console.error('获取语言数据失败:', langResult.reason);
+        setLanguages([]);
+      }
     } catch (err) {
       console.error('获取数据失败:', err);
       setError(err.message || '获取数据失败');
@@ -71,45 +98,39 @@ const SimilarProjectsModal = ({ isOpen, onClose, projectName, currentScore, curr
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       {/* 背景遮罩 */}
       <div 
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
       />
       
       {/* 弹窗内容 */}
-      <div className="relative bg-[#0a0a12] border border-gray-700 w-full max-w-2xl max-h-[80vh] overflow-hidden">
-        {/* 角标装饰 */}
-        <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-purple-500" />
-        <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-purple-500" />
-        <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-purple-500" />
-        <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-purple-500" />
-        
+      <div className="relative bg-white border border-slate-200 rounded-xl w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-xl">
         {/* 头部 */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-800">
+        <div className="flex items-center justify-between p-4 border-b border-slate-200 bg-slate-50">
           <div className="flex items-center gap-3">
-            <div className="w-1 h-6 bg-purple-500" />
+            <div className="w-1 h-6 bg-orange-500 rounded" />
             <div>
-              <h3 className="text-gray-200 uppercase tracking-widest text-sm font-medium">
+              <h3 className="text-slate-600 uppercase tracking-widest text-sm font-medium">
                 PROJECT ANALYSIS
               </h3>
-              <p className="text-gray-600 text-xs mt-0.5 font-mono">{projectName}</p>
+              <p className="text-slate-400 text-xs mt-0.5 font-mono">{projectName}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-800 text-gray-400 hover:text-gray-200 transition-colors"
+            className="p-2 hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors rounded-lg"
           >
             <CloseIcon />
           </button>
         </div>
 
         {/* Tab 切换 */}
-        <div className="flex border-b border-gray-800">
+        <div className="flex border-b border-slate-200">
           <button
             onClick={() => setActiveTab('similar')}
             className={`flex-1 px-4 py-3 text-sm font-medium uppercase tracking-widest transition-colors ${
               activeTab === 'similar'
-                ? 'text-purple-400 border-b-2 border-purple-500 bg-purple-500/5'
-                : 'text-gray-500 hover:text-gray-300'
+                ? 'text-orange-500 border-b-2 border-orange-500 bg-orange-50'
+                : 'text-slate-400 hover:text-slate-600'
             }`}
           >
             相似项目
@@ -118,8 +139,8 @@ const SimilarProjectsModal = ({ isOpen, onClose, projectName, currentScore, curr
             onClick={() => setActiveTab('languages')}
             className={`flex-1 px-4 py-3 text-sm font-medium uppercase tracking-widest transition-colors ${
               activeTab === 'languages'
-                ? 'text-cyan-400 border-b-2 border-cyan-500 bg-cyan-500/5'
-                : 'text-gray-500 hover:text-gray-300'
+                ? 'text-cyan-600 border-b-2 border-cyan-500 bg-cyan-50'
+                : 'text-slate-400 hover:text-slate-600'
             }`}
           >
             技术栈
@@ -130,18 +151,18 @@ const SimilarProjectsModal = ({ isOpen, onClose, projectName, currentScore, curr
         <div className="p-4 overflow-y-auto max-h-[60vh]">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-2 border-gray-700 border-t-purple-500 animate-spin" />
-              <span className="ml-3 text-gray-400 text-sm uppercase tracking-wider">Loading...</span>
+              <div className="w-8 h-8 border-2 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
+              <span className="ml-3 text-slate-400 text-sm uppercase tracking-wider">Loading...</span>
             </div>
           ) : error ? (
             <div className="text-center py-12">
-              <p className="text-red-400 text-sm">{error}</p>
+              <p className="text-red-500 text-sm">{error}</p>
             </div>
           ) : activeTab === 'similar' ? (
             /* 相似项目列表 */
             <div className="space-y-2">
               {similarProjects.length === 0 ? (
-                <div className="text-center py-8 text-gray-600 text-sm uppercase tracking-wider">
+                <div className="text-center py-8 text-slate-400 text-sm uppercase tracking-wider">
                   NO SIMILAR PROJECTS
                 </div>
               ) : (
@@ -149,30 +170,30 @@ const SimilarProjectsModal = ({ isOpen, onClose, projectName, currentScore, curr
                   <div
                     key={index}
                     onClick={() => handleProjectClick(project)}
-                    className="p-4 bg-gray-900/30 border border-gray-800 hover:border-purple-500/50 
-                             cursor-pointer transition-all group"
+                    className="p-4 bg-slate-50 border border-slate-200 hover:border-orange-300 
+                             cursor-pointer transition-all group rounded-lg"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <span className="text-gray-600 font-mono text-sm">#{index + 1}</span>
+                        <span className="text-slate-400 font-mono text-sm">#{index + 1}</span>
                         <div>
-                          <h4 className="text-gray-200 font-medium font-mono group-hover:text-purple-400 transition-colors">
+                          <h4 className="text-slate-700 font-medium font-mono group-hover:text-orange-500 transition-colors">
                             {project.project?.replace('_', '/') || project.project_key?.replace('_', '/')}
                           </h4>
-                          <p className="text-gray-500 text-xs mt-1">
-                            相似度: <span className="text-cyan-400 font-mono">{(project.similarity * 100).toFixed(1)}%</span>
+                          <p className="text-slate-400 text-xs mt-1">
+                            分数差: <span className="text-cyan-600 font-mono">{project.score_diff?.toFixed(1) || '-'}</span>
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <p className="text-gray-600 text-[10px] uppercase tracking-wider">Score</p>
+                          <p className="text-slate-400 text-[10px] uppercase tracking-wider">Score</p>
                           <p className="font-mono font-bold text-lg" style={{ color: getGradeColor(project.grade) }}>
                             {project.final_score?.toFixed(0) || '-'}
                           </p>
                         </div>
                         <div 
-                          className="w-10 h-10 flex items-center justify-center border-2 font-mono text-xl font-bold"
+                          className="w-10 h-10 flex items-center justify-center border-2 font-mono text-xl font-bold rounded-lg"
                           style={{ borderColor: getGradeColor(project.grade), color: getGradeColor(project.grade) }}
                         >
                           {project.grade || '-'}
@@ -187,8 +208,13 @@ const SimilarProjectsModal = ({ isOpen, onClose, projectName, currentScore, curr
             /* 技术栈分布 */
             <div className="space-y-3">
               {languages.length === 0 ? (
-                <div className="text-center py-8 text-gray-600 text-sm uppercase tracking-wider">
-                  NO LANGUAGE DATA
+                <div className="text-center py-8">
+                  <div className="text-slate-400 text-sm uppercase tracking-wider mb-2">
+                    暂无语言数据
+                  </div>
+                  <p className="text-slate-400 text-xs">
+                    GitHub API 速率限制，请稍后再试
+                  </p>
                 </div>
               ) : (
                 languages.map((lang, index) => (
@@ -196,31 +222,21 @@ const SimilarProjectsModal = ({ isOpen, onClose, projectName, currentScore, curr
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <div 
-                          className="w-2 h-2"
+                          className="w-2 h-2 rounded-full"
                           style={{ backgroundColor: lang.color || '#6b7280' }}
                         />
-                        <span className="text-gray-300 text-sm font-mono">{lang.name}</span>
+                        <span className="text-slate-600 text-sm font-mono">{lang.name}</span>
                       </div>
-                      <span className="text-gray-500 text-xs font-mono">{lang.percentage?.toFixed(1)}%</span>
+                      <span className="text-slate-400 text-xs font-mono">{lang.percentage?.toFixed(1)}%</span>
                     </div>
-                    <div className="h-1 bg-gray-800 relative">
+                    <div className="h-2 bg-slate-100 rounded-full relative overflow-hidden">
                       <div
-                        className="h-full transition-all duration-500"
+                        className="h-full rounded-full transition-all duration-500"
                         style={{
                           width: `${lang.percentage || 0}%`,
                           backgroundColor: lang.color || '#6b7280'
                         }}
                       />
-                      {/* 刻度线 */}
-                      <div className="absolute inset-0 flex">
-                        {[25, 50, 75].map(mark => (
-                          <div 
-                            key={mark}
-                            className="absolute top-0 w-px h-full bg-gray-700"
-                            style={{ left: `${mark}%` }}
-                          />
-                        ))}
-                      </div>
                     </div>
                   </div>
                 ))
@@ -230,15 +246,15 @@ const SimilarProjectsModal = ({ isOpen, onClose, projectName, currentScore, curr
         </div>
 
         {/* 底部信息 */}
-        <div className="px-4 py-3 border-t border-gray-800 bg-gray-900/30">
-          <div className="flex items-center justify-between text-xs text-gray-600">
+        <div className="px-4 py-3 border-t border-slate-200 bg-slate-50">
+          <div className="flex items-center justify-between text-xs text-slate-500">
             <span className="uppercase tracking-wider">
               {activeTab === 'similar' ? `${similarProjects.length} SIMILAR` : `${languages.length} LANGUAGES`}
             </span>
             <div className="flex items-center gap-4">
-              <span>当前评分: <span className="text-white font-mono">{currentScore?.toFixed(0) || '-'}</span></span>
+              <span>当前评分: <span className="text-slate-700 font-mono">{currentScore?.toFixed(0) || '-'}</span></span>
               <span 
-                className="font-mono font-bold px-2 py-0.5 border"
+                className="font-mono font-bold px-2 py-0.5 border rounded"
                 style={{ borderColor: getGradeColor(currentGrade), color: getGradeColor(currentGrade) }}
               >
                 {currentGrade || '-'}
