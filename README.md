@@ -145,7 +145,7 @@ Open `http://127.0.0.1:5173` in your browser to access the platform.
 - **View Similar Health Projects** — Browse projects with similar health scores in the list
 ![Project Demo](./images/similar.png)
 - **Contribution Details** — View project contributors
- ![Project Demo](./images/contributer.png)
+![Project Demo](./images/contributer.png)
 - **Intelligent Q&A** — Use the agent to get project analysis
 
 ## Health Assessment Algorithm
