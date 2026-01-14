@@ -4,7 +4,6 @@ from sqlalchemy import text
 
 conn = engine.connect()
 
-# 检查 apache/airflow 的 PullRequestEvent
 result = conn.execute(text("""
     SELECT COUNT(*) 
     FROM top300_2022_2023 
@@ -13,7 +12,6 @@ result = conn.execute(text("""
 """))
 print("apache/airflow 的 PullRequestEvent 数量:", result.fetchone()[0])
 
-# 检查 top300 表中有多少项目有 PullRequestEvent
 result2 = conn.execute(text("""
     SELECT repo_name, COUNT(*) as cnt 
     FROM top300_2022_2023 
