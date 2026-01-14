@@ -2,7 +2,9 @@
 
 [![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)[![Python Version](https://img.shields.io/badge/python-%3E%3D3.8-red)](https://www.python.org/)[![MySQL](https://img.shields.io/badge/MySQL-%3E%3D8.0-blue)](https://www.mysql.com/)[![CN](https://img.shields.io/badge/中文-README--CN.md-orange)](README-CN.md)
 
-> **Open Source Community Health Assessment & Visualization Platform** — Insight into community pulse, quantify health metrics
+**Open Source Community Health Assessment & Visualization Platform** — Insight into community pulse, quantify health metrics
+
+
 ![Project Demo](./images/table.png)
 ## Table of Contents
 - [Background](#background)
@@ -273,7 +275,7 @@ def calculate_health_score(data):
     return round(final_score, 2)
 ```
 
-## Backend Error Handling
+### Backend Error Handling
 When backend data fails to transmit to the frontend, a notification will pop up in the frontend. Developers can use this notification to improve the backend.
 ![Project Demo](./images/error.png)
 
