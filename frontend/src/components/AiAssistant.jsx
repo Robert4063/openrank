@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 // MaxKB嵌入配置
-const MAXKB_EMBED_URL = 'https://41cadc32.r1.cpolar.top/chat/api/embed?protocol=https&host=41cadc32.r1.cpolar.top&token=e6a447bdc1c14ec9';
+const MAXKB_EMBED_URL = 'https://6b564ed1.r7.vip.cpolar.cn/chat/api/embed?protocol=https&host=6b564ed1.r7.vip.cpolar.cn&token=e6a447bdc1c14ec9';
 
 // 创建iframe内嵌的HTML内容
 const getIframeContent = () => `
