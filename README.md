@@ -147,6 +147,7 @@ Open `http://127.0.0.1:5173` in your browser to access the platform.
 ![Project Demo](./images/similar.png)
 - **Contribution Details** — View project contributors
 ![Project Demo](./images/contributer.png)
+![Project Demo](./images/techstack.png)
 - **Intelligent Q&A** — Use the agent to get project analysis
 
 ## Health Assessment Algorithm
