@@ -10,7 +10,6 @@
 
 - [Background](#background)
 - [Introduction](#introduction)
-- [Team Roles](#team-roles)
 - [Core Features](#core-features)
 - [Technical Architecture](#technical-architecture)
 - [Installation & Deployment](#installation--deployment)
@@ -18,6 +17,7 @@
 - [Health Assessment Algorithm](#health-assessment-algorithm)
 - [Roadmap](#roadmap)
 - [Contribution](#contribution)
+- [Team Roles](#team-roles)
 - [License](#license)
 
 ## Background
@@ -300,8 +300,8 @@ Contributions via Issues and Pull Requests are welcome. Before submitting, pleas
 
 ## Team Roles
 
-- **Yang Jiahui** — React frontend framework construction, GitHub Issue/Comments data crawling/cleaning and dimension import, OpenDigger data crawling, backend tech stack/database connection and architecture, frontend-backend response system construction, conceptualizing the 4-dimensional assessment system, building the PHAM v2.0 model, contributor analysis dimension decision-making.
-- **Pang Yifei** — MaxKB agent local deployment, network connection and (knowledge base, model) construction, GitHub Star/Fork data crawling/cleaning/organization, feasibility analysis of PHAM v2.0 model construction, market demand research and related data analysis, PPT production and report writing.
+- Leader:**[@Robert4063 杨家辉](https://github.com/Robert4063)** — React frontend framework construction, GitHub Issue/Comments data crawling/cleaning and dimension import, OpenDigger data crawling, backend tech stack/database connection and architecture, frontend-backend response system construction, conceptualizing the 4-dimensional assessment system, building the PHAM v2.0 model, contributor analysis dimension decision-making.
+- Member:**[@pyf060502-glitch 庞毅飞](https://github.com/pyf060502-glitch)** — MaxKB agent local deployment, network connection and (knowledge base, model) construction, GitHub Star/Fork data crawling/cleaning/organization, feasibility analysis of PHAM v2.0 model construction, market demand research and related data analysis, PPT production and report writing.
 
 ## License
 
