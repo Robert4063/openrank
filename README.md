@@ -1,41 +1,46 @@
 # OpenPulse
 
-[![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)[![Python Version](https://img.shields.io/badge/python-%3E%3D3.8-red)](https://www.python.org/)[![MySQL](https://img.shields.io/badge/MySQL-%3E%3D8.0-blue)](https://www.mysql.com/)[![CN](https://img.shields.io/badge/中文-README--CN.md-orange)](README-CN.md)
+![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen) ![Python Version](https://img.shields.io/badge/python-%3E%3D3.8-red) ![MySQL Version](https://img.shields.io/badge/MySQL-%3E%3D8.0-blue) ![Language](https://img.shields.io/badge/English-README.md-orange)
 
-**Open Source Community Health Assessment & Visualization Platform** — Insight into community pulse, quantify health metrics
-
+> **Open Source Community Health Assessment & Visualization Platform** — Insight into community pulse, quantifying health levels.
 
 ![Project Demo](./images/table.png)
+
 ## Table of Contents
+
 - [Background](#background)
 - [Introduction](#introduction)
+- [Team Roles](#team-roles)
 - [Core Features](#core-features)
 - [Technical Architecture](#technical-architecture)
 - [Installation & Deployment](#installation--deployment)
-- [User Guide](#user-guide)
+- [Usage Guide](#usage-guide)
 - [Health Assessment Algorithm](#health-assessment-algorithm)
 - [Roadmap](#roadmap)
-- [Contributing](#contributing)
+- [Contribution](#contribution)
 - [License](#license)
 
 ## Background
-In the rapidly evolving open source ecosystem, understanding project health and vitality has become increasingly important for developers, maintainers, and organizations. OpenPulse was created to address this need, providing a comprehensive open source community health assessment and visualization platform. By combining multi-dimensional metrics with intelligent analysis, OpenPulse offers deep insights into project sustainability and growth potential.
+
+In the rapidly evolving open source ecosystem, understanding the health and vitality of projects has become increasingly important for developers, maintainers, and organizations. **OpenPulse** was created to address this need, providing a comprehensive platform for open source community health assessment and visualization. By combining multi-dimensional metrics with intelligent analysis, OpenPulse offers deep insights into project sustainability and growth potential.
 
 ## Introduction
-**OpenPulse** is a comprehensive open source community health assessment platform that deeply explores the pulse and vitality of communities through multi-dimensional visualization and intelligent analysis. The system integrates OpenDigger data and leverages AI-driven multi-agent collaboration for real-time analysis.
+
+**OpenPulse** is an all-encompassing open source community health assessment platform. Through multi-dimensional visualization and intelligent analysis, it deeply mines the pulse and vitality of communities. The system integrates OpenDigger data and utilizes AI-driven agent collaboration for real-time analysis.
 
 **Core Capabilities:**
-- **Community Panorama** — Multi-dimensional health metrics, 3D visualization of collaboration relationships
-- **Lifecycle Analysis** — Historical retrospective + trend prediction, combined with OpenDigger data
-- **Intelligent Collaboration** — MaxKB agent-assisted data analysis
-- **Smart Search** — Trending rankings, intelligent sorting, contributor profiling
+- **Community Panorama** — Multi-dimensional health metrics presenting comprehensive health reports.
+- **Lifecycle** — Historical backtracking + trend prediction, combined with OpenDigger data.
+- **Intelligent Collaboration** — MaxKB agents assisting in data analysis.
+- **Smart Search** — Trending leaderboards, intelligent sorting, and contributor profiling.
 
 ## Core Features
+
 1. **Multi-dimensional Health Assessment**
-   - Project health score (0-100)
-   - Growth metrics (Star/Fork trends)
-   - Activity monitoring (Commit/PR analysis)
-   - Code churn evaluation
+   - Project Health Score (0-100)
+   - Growth Metrics (Star/Fork trends)
+   - Activity Monitoring (Commit/PR analysis)
+   - Code Churn Assessment
 
 2. **Interactive Visualization**
    - Collaboration network display
@@ -43,24 +48,25 @@ In the rapidly evolving open source ecosystem, understanding project health and 
 
 3. **Intelligent Analysis**
    - MaxKB agent collaboration
-  ![Project Demo](./images/ai.png)
+   ![AI Demo](./images/ai.png)
 
 4. **Search & Discovery**
-   - Daily trending project rankings
-   - Smart sorting by activity and relevance
-   - Contributor profiling and matching
+   - Daily trending project leaderboards
+   - Intelligent sorting by activity and relevance
+   - Contributor profiles and matching
 
 ## Technical Architecture
 
 ### Frontend Stack
+
 | Technology | Purpose |
 |------------|---------|
 | React | Web Framework |
-| D3.js / Three.js | Visualization Engine (3D Sphere Graph) |
 | Tailwind CSS | Styling Framework |
 | Vite | Build Tool |
 
 ### Backend Stack
+
 | Technology | Purpose |
 |------------|---------|
 | Python + FastAPI | Web Service Framework |
@@ -69,6 +75,7 @@ In the rapidly evolving open source ecosystem, understanding project health and 
 | OpenDigger API | Open Source Metrics Data |
 
 ### AI & Agents
+
 | Technology | Purpose |
 |------------|---------|
 | MaxKB | Agent Collaboration |
@@ -83,13 +90,13 @@ In the rapidly evolving open source ecosystem, understanding project health and 
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/YourUsername/OpenPulse.git
+git clone https://github.com/YourUsername/OpenPulse.git 
 cd OpenPulse
 ```
 
 ### 2. Backend Deployment
 ```bash
-# Navigate to backend directory
+# Enter backend directory
 cd backend
 
 # Install Python dependencies
@@ -101,14 +108,14 @@ pip install -r requirements.txt
 
 | Variable | Description | Required |
 |----------|-------------|:--------:|
-| `GITHUB_TOKEN` | GitHub API access token | Yes |
-| `MYSQL_HOST` | MySQL database address | Yes |
-| `MYSQL_USER` | Database username | Yes |
-| `MYSQL_PASSWORD` | Database password | Yes |
-| `MYSQL_DATABASE` | Database name (default `openrank`) | No |
-| `OPENDIGGER_API` | OpenDigger data API endpoint | No |
+| GITHUB_TOKEN | GitHub API Access Token | Yes |
+| MYSQL_HOST | MySQL Host Address | Yes |
+| MYSQL_USER | Database Username | Yes |
+| MYSQL_PASSWORD | Database Password | Yes |
+| MYSQL_DATABASE | Database Name (default: openrank) | No |
+| OPENDIGGER_API | OpenDigger API Address | No |
 
-See `.env.example` for complete configuration options
+*See `.env.example` for full configuration options.*
 
 ```bash
 # Start backend service
@@ -117,7 +124,7 @@ python main.py
 
 ### 3. Frontend Deployment
 ```bash
-# Return to project root and navigate to frontend directory
+# Return to root and enter frontend directory
 cd ../frontend
 
 # Install dependencies
@@ -127,97 +134,88 @@ npm install
 npm run dev
 ```
 
-### 4. Access the System
-Open `http://127.0.0.1:5173` in your browser to access the platform.
+### 4. Access System
+Open your browser and visit `http://127.0.0.1:5173` to enter the platform.
 
-## User Guide
+## Usage Guide
 
-### Homepage & Search
-- **Browse Trending** — View daily updated trending projects
-- **Search Projects** — Enter project name, sorted by relevance and activity
-![Project Demo](./images/search.png)
+### Home & Search
+- **Browse Trends** — View daily updated trending projects.
+- **Search Projects** — Enter project names, displayed sorted by relevance and activity.
+![Search Demo](./images/search.png)
 
 ### Project Dashboard
-- **Overview** — View closeness line charts, activity histograms
-- **Health Analysis** — Check the project's health score calculated using the PHAM model
-![Project Demo](./images/health.png)
+- **Overview** — Observe tightness line charts and activity histograms.
+- **Health Analysis** — View the health score calculated using the PHAM model.
+![Health Demo](./images/health.png)
 
-### Relationship Network Interaction
-- **View Similar Health Projects** — Browse projects with similar health scores in the list
-![Project Demo](./images/similar.png)
-- **Contribution Details** — View project contributors
-![Project Demo](./images/contributer.png)
-![Project Demo](./images/techstack.png)
-- **Intelligent Q&A** — Use the agent to get project analysis
+### Network Interaction
+- **Similar Projects** — View projects with similar health scores in the list.
+![Similar Demo](./images/similar.png)
+- **Contribution Details** — View contributors of the project.
+![Contributor Demo](./images/contributer.png)
+![Tech Stack Demo](./images/techstack.png)
+
+**Intelligent Q&A** — Use the agent to get project analysis.
 
 ## Health Assessment Algorithm
 
 ### PHAM - Project Health Assessment Model
-Core algorithm that quantitatively evaluates open source project health, outputting a score from **0 to 100**.
+The core algorithm that quantifies open source project health, outputting a score from **0 to 100**.
 
-### Overall Formula
-```
-M = 0.2 × Growth + 0.4 × Activity + 0.2 × Contribution + 0.2 × Code
-```
+### General Formula
+$$ M = 0.2 \times Growth + 0.4 \times Activity + 0.2 \times Contribution + 0.2 \times Code $$
 
 ### Four-Dimensional Assessment System
 
-| Dimension | Weight | Key Metrics | Description |
+| Dimension | Weight | Core Metric | Description |
 |-----------|:------:|-------------|-------------|
-| **Growth** | 20% | Star / Fork growth rate | Community attention |
-| **Activity** | 40% | Commit trends + OpenDigger | Development activity (core) |
-| **Contribution** | 20% | PR trends | Community contribution intensity |
-| **Code Churn** | 20% | Code changes (logarithmic) | Development throughput |
+| **Growth** | 20% | Star / Fork Growth Rate | Community Interest Heat |
+| **Activity** | 40% | Commit Trend + OpenDigger | Development Activity (Core) |
+| **Contribution** | 20% | PR Trend | Community Contribution Heat |
+| **Code Churn** | 20% | Code Churn (Logarithmic) | Development Throughput |
 
 ### Detailed Calculation Logic
 
-#### ⭐ Growth (Attention Growth) — 20%
-```
-Star growth rate:  x = (Current month Stars / (Previous 3 months avg Stars + 1)) × 100
-Fork growth rate:  y = (Current month Forks / (Previous 3 months avg Forks + 1)) × 100
+#### ⭐ Growth (Interest Growth) — 20%
+- **Star Growth Rate**: $x = (\text{This Month Star} / (\text{Prev 3 Months Avg Star} + 1)) \times 100$
+- **Fork Growth Rate**: $y = (\text{This Month Fork} / (\text{Prev 3 Months Avg Fork} + 1)) \times 100$
 
-Score_Growth = 0.5 × min(x, 200)/2 + 0.5 × min(y, 200)/2
+$$ Score\_Growth = 0.5 \times \min(x, 200)/2 + 0.5 \times \min(y, 200)/2 $$
 
-⚠️ Growth rate capped at 200% (score 100) to prevent score explosion from small base numbers
-```
+⚠️ *Growth rate capped at 200% (Score 100) to prevent small projects from exploding scores due to small baselines.*
 
 #### 🔥 Activity — 40%
-```
-Commit Trend:
-Ratio_z = (Last week avg Commits + 1) / (Monthly avg Commits + 1)
-Score_z = clamp(0, 100, 50 + (Ratio_z − 1) × 50)
+- **Commit Trend**:
+  $$ Ratio\_z = (\text{Last Week Avg Commit} + 1) / (\text{This Month Avg Commit} + 1) $$
+  $$ Score\_z = \text{clamp}(0, 100, 50 + (Ratio\_z - 1) \times 50) $$
 
-OpenDigger Activity:
-Score_m = min(100, OpenDigger_Activity × 10)
+- **OpenDigger Activity**:
+  $$ Score\_m = \min(100, OpenDigger\_Activity \times 10) $$
 
-Final Score:
-Score_Activity = 0.3 × Score_z + 0.7 × Score_m
-```
+- **Final Score**:
+  $$ Score\_Activity = 0.3 \times Score\_z + 0.7 \times Score\_m $$
 
 | Ratio Value | Meaning | Score Trend |
 |:-----------:|---------|:-----------:|
-| `> 1` | Activity rising ↑ | `> 50` |
-| `= 1` | Stable → | `= 50` |
-| `< 1` | Activity declining ↓ | `< 50` |
+| > 1 | Activity Rising ↑ | > 50 |
+| = 1 | Stable → | = 50 |
+| < 1 | Activity Falling ↓ | < 50 |
 
 #### 🤝 Contribution — 20%
-```
-Ratio_n = (Last week avg PRs + 1) / (Monthly avg PRs + 1)
-Score_Contrib = clamp(0, 100, 50 + (Ratio_n − 1) × 50)
-```
+$$ Ratio\_n = (\text{Last Week Avg PR} + 1) / (\text{This Month Avg PR} + 1) $$
+$$ Score\_Contrib = \text{clamp}(0, 100, 50 + (Ratio\_n - 1) \times 50) $$
 
 #### 💻 Code Churn (Code Health) — 20%
-```
-Total churn:  q = Lines added + Lines deleted
-Score_Code = min(100, 20 × log₁₀(q + 1))
-```
+- **Total Churn**: $q = \text{Lines Added} + \text{Lines Deleted}$
+$$ Score\_Code = \min(100, 20 \times \log_{10}(q + 1)) $$
 
-| Churn q | log₁₀(q+1) | Score |
-|:-------:|:----------:|:-----:|
-| 100 lines | ≈ 2 | 40 |
-| 1,000 lines | ≈ 3 | 60 |
-| 10,000 lines | ≈ 4 | 80 |
-| 100,000 lines | ≈ 5 | 100 |
+| Churn $q$ | $\log_{10}(q+1)$ | Score |
+|:---------:|:----------------:|:-----:|
+| 100 Lines | ≈ 2 | 40 |
+| 1,000 Lines | ≈ 3 | 60 |
+| 10,000 Lines | ≈ 4 | 80 |
+| 100,000 Lines | ≈ 5 | 100 |
 
 ### Algorithm Implementation
 
@@ -226,24 +224,24 @@ import math
 
 def calculate_health_score(data):
     """
-    Calculate project health score
+    Calculate Project Health Score
     
     Args:
         data: dict, containing the following fields:
-            - star_current_month      Stars added this month
-            - star_avg_prev_3m        Average Stars over previous 3 months
-            - fork_current_month      Forks added this month
-            - fork_avg_prev_3m        Average Forks over previous 3 months
-            - commit_avg_last_week    Average Commits last week
-            - commit_avg_month        Average Commits this month
-            - opendigger_activity     OpenDigger Activity metric
-            - pr_avg_last_week        Average PRs last week
-            - pr_avg_month            Average PRs this month
+            - star_current_month      New Stars this month
+            - star_avg_prev_3m        Avg Stars previous 3 months
+            - fork_current_month      New Forks this month
+            - fork_avg_prev_3m        Avg Forks previous 3 months
+            - commit_avg_last_week    Avg Commits last week
+            - commit_avg_month        Avg Commits this month
+            - opendigger_activity     OpenDigger Activity Metric
+            - pr_avg_last_week        Avg PRs last week
+            - pr_avg_month            Avg PRs this month
             - pull_additions          Lines of code added
             - pull_deletions          Lines of code deleted
     
     Returns:
-        float: Health score (0-100)
+        float: Health Score (0-100)
     """
     
     # 1. Growth (Star & Fork) - 20%
@@ -276,33 +274,41 @@ def calculate_health_score(data):
     return round(final_score, 2)
 ```
 
-### Backend Error Handling
-When backend data fails to transmit to the frontend, a notification will pop up in the frontend. Developers can use this notification to improve the backend.
-![Project Demo](./images/error.png)
+## Project Backend Errors
+When backend data fails to transmit to the frontend, a prompt will appear on the frontend, allowing developers to improve the backend based on this hint.
+![Error Demo](./images/error.png)
 
 ## Roadmap
-- [x] Basic framework setup
-- [x] Health assessment algorithm implementation
-- [x] Visualization engine development
-- [x] OpenDigger data integration
-- [X] Improve multi-agent collaboration workflow
-- [ ] Optimize 3D rendering performance
-- [ ] Integrate more open source data sources
-- [ ] Release mobile-responsive version
-- [ ] Support custom weight configuration
 
-## Contributing
-We welcome Issues and Pull Requests to help improve the project. Before submitting, please ensure:
-1. Issue descriptions are clear and complete
-2. Pull Requests include detailed explanations
-3. Code follows project conventions
-4. Necessary test cases are provided
+- [x] Basic Framework Setup
+- [x] Health Assessment Algorithm Implementation
+- [x] Visualization Engine Development
+- [x] OpenDigger Data Integration
+- [x] Multi-Agent Collaboration Workflow Refinement
+- [ ] Optimize 3D Rendering Performance
+- [ ] Integrate More Open Source Data Sources
+- [ ] Mobile Adaptation
+- [ ] Support Custom Weight Configuration
+
+## Contribution
+
+Contributions via Issues and Pull Requests are welcome. Before submitting, please ensure:
+1. Issue description is clear and complete.
+2. Pull Request contains detailed explanation.
+3. Code follows project standards.
+4. Necessary test cases are provided.
+
+## Team Roles
+
+- **Yang Jiahui** — React frontend framework construction, GitHub Issue/Comments data crawling/cleaning and dimension import, OpenDigger data crawling, backend tech stack/database connection and architecture, frontend-backend response system construction, conceptualizing the 4-dimensional assessment system, building the PHAM v2.0 model, contributor analysis dimension decision-making.
+- **Pang Yifei** — MaxKB agent local deployment, network connection and (knowledge base, model) construction, GitHub Star/Fork data crawling/cleaning/organization, feasibility analysis of PHAM v2.0 model construction, market demand research and related data analysis, PPT production and report writing.
 
 ## License
+
 This project is licensed under the [MIT License](LICENSE).
 
 ---
 
 <p align="center">
-<strong>OpenPulse</strong> — Insight into the pulse and vitality of open source communities
+  <strong>OpenPulse</strong> — Insight into the pulse and vitality of the open source community
 </p>
