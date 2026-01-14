@@ -144,6 +144,7 @@ npm run dev
 ![项目演示](./images/similar.png)
 - **贡献详情** — 观看这个项目的贡献者
 ![项目演示](./images/contributer.png)
+![项目演示](./images/techstack.png)
  **智能问答** — 使用智能体获取项目分析
 
 
